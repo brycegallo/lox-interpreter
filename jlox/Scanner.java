@@ -114,10 +114,14 @@ private void ScanToken() {
     }
 }
 
+// if identifier matches anything in the map, we use that keyword's token type, otherwise it's a user-defined identifier
 private void identifier() {
     while (isAlphaNumeric(peek())) advance();
 
-    addToken(IDENTIFIER);
+    String text = source.substring(start, current);
+    TokenType type = keywords.get(text);
+    if (type == null) type = IDENTIFIER;
+    addToken(type);
 }
 
 private void string() {
