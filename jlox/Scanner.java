@@ -81,9 +81,22 @@ private void ScanToken() {
         case '"': string(); break;
 
         // for characters not used by Lox language
-        default: Lox.error(line, "Unexpected character.");
+        default:
+            if (isDigit(c)) {
+                number();
+            } else if (isAlpha(c)) {
+                identifier();
+            } else {
+                Lox.error(line, "Unexpected character.");
+            }
         break;
     }
+}
+
+private void identifier() {
+    while (isAlphaNumeric(peek())) advance();
+
+    addToken(IDENTIFIER);
 }
 
 private void string() {
@@ -105,6 +118,21 @@ private void string() {
     addToken(STRING, value);
 }
 
+private void number() {
+    while (isDigit(peek())) advance();
+
+    // look for a fractional part (the decimal point) followed by at least one digit
+    if (peek() == '.' && isDigit(peekNext())) {
+        // consume the "."
+        advance()
+
+        while (isDigit(peek())) advance();
+    }
+
+    // this interpreter uses java's Double type to represent numbers
+    addToken(NUMBER, Double.parseDouble(source.substring(start,current)));
+}
+
 // conditional version of advance() for consuming the current character only if it's what we're looking for
 private boolean match(char expected) {
     if (isAtEnd()) return false;
@@ -118,6 +146,26 @@ private boolean match(char expected) {
 private char peek() {
     if (isAtEnd()) return '\0';
     return source.charAt(current);
+}
+
+// lookahead ensuring we can search at most two characters ahead
+private char peekNext() {
+    if (current + 1 >= source.length()) return '\0';
+    return source.charAt(current + 1);
+}
+
+private boolean isAlpha(char c) {
+    return (c >= 'a' && c <= 'z') ||
+            (c >= 'A' && c <= 'Z') ||
+            c == '_';
+}
+
+private boolean isAlphaNumeric(char c) {
+    return isAlpha(c) || isDigit(c);
+}
+
+private boolean isDigit(char c) {
+    return c >= '0' && c <= '9';
 }
 
 // helper function to tell us if we've consumed all characters in a token
