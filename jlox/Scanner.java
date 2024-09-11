@@ -32,8 +32,112 @@ List<Token> scanTokens() {
     return tokens;
 }
 
+private void ScanToken() {
+    char c = advance();
+    switch (c) {
+        case '(': addToken(LEFT_PAREN); break;
+        case ')': addToken(RIGHT_PAREN); break;
+        case '{': addToken(LEFT_BRACE); break;
+        case '}': addToken(RIGHT_BRACE); break;
+        case ',': addToken(COMMA); break;
+        case '.': addToken(DOT); break;
+        case '-': addToken(MINUS); break;
+        case '+': addToken(PLUS); break;
+        case ';': addToken(SEMICOLON); break;
+        case '*': addToken(STAR); break;
+        // two stage lexeme recognition follows
+        case '!':
+            addToken(match('=') ? BANG_EQUAL : BANG);
+            break;
+        case '=':
+            addToken(match('=') ? EQUAL_EQUAL : EQUAL);
+            break;
+        case '<':
+            addToken(match('=') ? LESS_EQUAL : LESS);
+            break;
+        case '>':
+            addToken(match('=') ? GREATER_EQUAL : GREATER);
+            break;
+        case '/':
+            if (match('/')) {
+                // a comment goes until the end of the line
+                while (peek() != '\n' && !isAtEnd()) advance();
+            } else {
+                addToken(SLASH);
+            }
+            break;
+
+        // dealing with newlines and whitespace
+        case ' ':
+        case '\r':
+        case '\t':
+            // ignore whitespace
+            break;
+
+        case '\n':
+            line++;
+            break;
+
+        case '"': string(); break;
+
+        // for characters not used by Lox language
+        default: Lox.error(line, "Unexpected character.");
+        break;
+    }
+}
+
+private void string() {
+    while (peek() != '"' && !isAtEnd()) {
+        if (peek() == '\n') line++;
+        advance();
+    }
+
+    if (isAtEnd()) {
+        Lox.error(line, "Unterminated string.");
+        return;
+    }
+
+    // the closing "
+    advance();
+
+    // trim surrounding quotes
+    String value = source.substring(start +1, current -1);
+    addToken(STRING, value);
+}
+
+// conditional version of advance() for consuming the current character only if it's what we're looking for
+private boolean match(char expected) {
+    if (isAtEnd()) return false;
+    if (source.charAt(current) != expected) return false;
+
+    current++;
+    return true;
+}
+
+// lookahead version of advance for not consuming character
+private char peek() {
+    if (isAtEnd()) return '\0';
+    return source.charAt(current);
+}
+
 // helper function to tell us if we've consumed all characters in a token
 private boolean isAtEnd() {
     return current >= source.length();
+}
+
+// consums the next character in the source file and returns it
+private char advance() {
+    return source.charAt(current++);
+}
+
+// grabs the text of the current lexeme and creates a new token for it
+private void addToken(TokenType type) {
+    addToken(type, null);
+}
+
+// for tokens with literal values
+private void addToken(TokenType type, Object literal) {
+    String text = source.substring(start,current);
+    tokens.add(new Token(type, text, literal, line));
 }
 
