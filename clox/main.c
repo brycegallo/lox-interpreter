@@ -17,16 +17,19 @@ int main(int argc, char *argv[]) {
     const char *command = argv[1];
 
     int lexical_errors_present = 0;
+    int line_number = 1;
 
     if (strcmp(command, "tokenize") == 0) {
         // You can use print statements as follows for debugging, they'll be visible when running tests.
         fprintf(stderr, "Logs from your program will appear here!\n");
         
         char *file_contents = read_file_contents(argv[2]);
+	int comment_line = 0;
 
         // Uncomment this block to pass the first stage
          if (strlen(file_contents) > 0) {
 	     for (int i = 0; i < strlen(file_contents); i++) {
+		 if (comment_line == 0 || file_contents[i] == '\n') { 
 		 switch(file_contents[i]) {
 		     case '(':
 			 printf("LEFT_PAREN ( null\n"); break;
@@ -50,7 +53,8 @@ int main(int argc, char *argv[]) {
 			 printf("STAR * null\n"); break;
 		     case '/':
 			 if (i < strlen(file_contents) && file_contents[++i] == '/') {
-			     i = strlen(file_contents);
+			     //i = strlen(file_contents);
+			     comment_line = 1;
 			     break;
 			 } else {
 			     i--;
@@ -90,11 +94,19 @@ int main(int argc, char *argv[]) {
 		     case '\t':
 			 break;
 		     case '\n':
+			 comment_line = 0;
+			 line_number++;
 			 break;
 		     default:
-			fprintf(stderr, "[line 1] Error: Unexpected character: %c\n", file_contents[i]);
-			lexical_errors_present = 1;
-			break;
+			 if (comment_line == 0) {
+			     fprintf(stderr, "[line %d] Error: Unexpected character: %c\n", line_number, file_contents[i]);
+			     lexical_errors_present = 1;
+			     break;
+			 }
+			 else {
+			     break;
+			 }
+		 }
 		 }
 	     }
          } 
